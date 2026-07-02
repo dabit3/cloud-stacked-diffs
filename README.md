@@ -8,6 +8,8 @@ The skill is named `cloud-stacked-diffs` and lives at [`.agents/skills/cloud-sta
 
 The most common failure mode of a cloud coding agent working async is delivering one giant, unreviewable PR. This skill teaches the agent to deliver multi-step work as a chain of stacked draft pull requests instead: one branch per step, each branching from and targeting the previous step's branch, so reviewers can approve the work in small increments and merge bottom-up.
 
+Stacking also means waiting on human review never blocks the agent: each verified step is a solid foundation for the next, so the agent can work through an entire task as a chain of small, green, review-ready PRs while reviews happen on their own schedule.
+
 ## Install
 
 With the [Skills CLI](https://skills.sh/):
@@ -51,10 +53,16 @@ It finishes with a summary of the branch chain and all PR links, in merge order.
 
 - One branch and one draft PR per step, named `feature/NN-slug`
 - Step 1 branches from the default branch; every later step branches from the previous step's branch
-- Repository checks (lint, typecheck, tests) pass before each PR is opened
+- Repository checks (lint, typecheck, tests) pass before each PR is opened, and are re-run on every branch a restack touches, because verification is head-commit-specific
+- PR wiring is verified after creation: the base actually points at the parent branch and the diff is scoped to the step
+- Every PR body is self-contained: stack position, parent branch, evidence, and merge order
 - The repository's PR template is followed when one exists
-- Changes to an earlier step are propagated forward through the chain
+- Changes to an earlier step are propagated forward through the chain, then re-verified
+- Mid-run merges are handled: bases retargeted, remaining branches rebased (squash-merge aware), checks re-run
+- Superseded PRs are closed with a one-line explanation, so the open stack only contains PRs worth a reviewer's attention
 - The agent never merges PRs and never pushes to the default branch
+
+Known stacked-PR gotchas (merge-queue checks that can't pass until parents merge, review bots skipping drafts, squash-merge commit duplication) are documented with recovery commands in [`references/gotchas.md`](.agents/skills/cloud-stacked-diffs/references/gotchas.md).
 
 ## Requirements
 
