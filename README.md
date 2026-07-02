@@ -1,4 +1,4 @@
-# stacked-cloud-diffs
+# cloud-stacked-diffs
 
 Agent skill that turns big tasks into a reviewable stack of draft PRs. Works with Devin, Claude, Codex, and any harness supporting the [Agent Skills standard](https://agentskills.io/specification).
 
@@ -15,14 +15,14 @@ Stacking also means waiting on human review never blocks the agent: each verifie
 With the [Skills CLI](https://skills.sh/):
 
 ```bash
-npx skills add naderdabit/stacked-cloud-diffs@cloud-stacked-diffs
+npx skills add dabit3/cloud-stacked-diffs
 ```
 
 Or copy the skill directory into your project manually:
 
 ```bash
 mkdir -p .agents/skills
-cp -r path/to/stacked-cloud-diffs/.agents/skills/cloud-stacked-diffs .agents/skills/
+cp -r path/to/cloud-stacked-diffs/.agents/skills/cloud-stacked-diffs .agents/skills/
 ```
 
 If you use Devin, connecting a repository that contains this skill is enough: skills in `.agents/skills/` are discovered automatically.
@@ -48,6 +48,20 @@ main
 ```
 
 It finishes with a summary of the branch chain and all PR links, in merge order.
+
+### With a Linear MCP integration
+
+If the agent also has an issue tracker connected, for example the [Linear MCP server](https://linear.app/docs/mcp), the tracker can drive the stack instead of an inline list:
+
+```
+Read ENG-123 in Linear and treat its sub-issues, in order, as the steps.
+Split the work into stacked PRs, one per sub-issue. As you go, move each
+sub-issue to In Progress when you start it and to In Review with the draft
+PR link when its PR is up. When done, comment the full stack order and all
+PR links on ENG-123.
+```
+
+The skill defines how the stack is built; the MCP adds read/write access to the board. Steps come from sub-issues, per-step status lives on the issues, and PR links land in Linear, so reviewers can pick up the stack from either GitHub or Linear. This is especially useful for cloud agents working async, where the tracker is the shared source of truth between the agent and the humans reviewing it.
 
 ## What the skill enforces
 
