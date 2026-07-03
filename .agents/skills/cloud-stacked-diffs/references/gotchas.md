@@ -16,7 +16,7 @@ Merge-queue and stack-mergeability checks (Graphite's mergeability check, GitHub
 
 ## Review bots vs. drafts and stacks
 
-Automated review bots (Cursor BugBot, CodeRabbit, Copilot review, ...) typically:
+Automated review bots (Devin Review, Cursor BugBot, CodeRabbit, Copilot review, ...) typically:
 
 - Skip draft PRs entirely, and ignore trigger comments posted on drafts.
 - May not re-run on stacked-base PRs after pushes or empty commits.
