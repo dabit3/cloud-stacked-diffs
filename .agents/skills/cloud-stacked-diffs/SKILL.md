@@ -1,6 +1,6 @@
 ---
 name: cloud-stacked-diffs
-description: Deliver multi-step work as a chain of stacked draft pull requests — one branch per step, each branching from and targeting the previous step's branch. Use when the user asks for stacked PRs or stacked diffs, a PR stack or chain, incremental step-by-step review, or wants a large task split into small dependent PRs. Especially suited to cloud/background coding agents delivering large autonomous changes as reviewable increments.
+description: Deliver multi-step work as a chain of stacked draft pull requests — one branch per step, each branching from and targeting the previous step's branch. Use when the user asks for stacked PRs or stacked diffs, a PR stack or chain, incremental step-by-step review, or wants a large task split into small dependent PRs. Also use when updating, rebasing, or addressing review feedback on any PR that belongs to an existing stack (chained branches, e.g. feature/NN-*). Especially suited to cloud/background coding agents delivering large autonomous changes as reviewable increments.
 compatibility: Requires git and a way to create pull requests (a native Git/PR integration, or a platform CLI such as gh or glab)
 ---
 
@@ -50,6 +50,14 @@ The branches are chained, so changing step K affects every step after it:
 4. Re-verify everything you touched: re-run the repository's checks on every propagated branch. A merge or rebase can break a descendant even when there were no conflicts.
 5. If a step is dropped or reworked to the point its PR is obsolete, close that PR with a one-line comment ("superseded by #N"). The open stack must only contain PRs worth a reviewer's attention.
 
+## Handling review feedback on the stack
+
+When asked to address review comments (human or bot) on any PR in the stack:
+
+1. Enumerate all unresolved review threads across EVERY PR in the chain, not just the PR named in the request (`gh pr view <n> --comments`, or the GraphQL `reviewThreads` API with `isResolved`).
+2. Classify each comment by which step OWNS the flagged code. Fix it on that step's branch, then propagate forward per "If an earlier step needs changes".
+3. If a comment on PR N is owned by a different step (a parent sets it up, or a child already fixes it), do not duplicate a change into PR N — that breaks step scoping. Fix the owning step, or reply on the thread explaining the stack context so a reviewer can resolve it.
+
 ## If a step merges mid-run
 
 If you resume work and find the bottom of the stack already merged:
@@ -62,6 +70,7 @@ If you resume work and find the bottom of the stack already merged:
 
 - Merge-queue and stack-mergeability checks on a stacked PR often cannot pass until its parents merge. Never idle waiting on one — note it in the delivery summary instead.
 - Automated review bots typically skip draft PRs, and on stacked PRs a push or empty commit may not re-trigger them (closing and reopening the PR usually does). Never report a bot or check as green unless it ran against the branch's current head commit.
+- Review bots have no concept of the chain: they review each PR independently and may flag things a parent sets up or a child already fixes. Triage per "Handling review feedback on the stack"; if the repo uses Devin Review, add the stack convention to a root `REVIEW.md` (see [references/devin-review.md](references/devin-review.md)).
 - Details and recovery commands: [references/gotchas.md](references/gotchas.md).
 
 ## Delivery

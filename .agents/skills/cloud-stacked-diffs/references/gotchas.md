@@ -23,6 +23,16 @@ Automated review bots (Devin Review, Cursor BugBot, CodeRabbit, Copilot review, 
 
 Reliable re-trigger recipe: mark the PR ready for review; if the bot still does not run, close and reopen it (`gh pr close <n> && gh pr reopen <n>`) — most bots auto-run on reopen against the current head. If the workflow requires PRs to stay drafts, note in the delivery summary that bot review will start when the reviewer flips them ready, bottom-up.
 
+## Stack-unaware review bots
+
+Per-PR review bots have no model of the chain: each PR is reviewed independently, so a bot can flag code that a parent step sets up or a child step already fixes. Three layers of defense:
+
+1. **Geometry (automatic).** Because each PR's base is its parent branch, the parent's work is already in the diff context the bot reviews against. This alone prevents most false flags.
+2. **Instruction.** If the repo uses Devin Review, add the stack convention to a root `REVIEW.md` so the bot reviews each PR against its base without demanding context that lives in the parent — copy-paste snippet in [devin-review.md](devin-review.md). Other bots have equivalents (Cursor BugBot reads `.cursor/BUGBOT.md`, CodeRabbit reads `.coderabbit.yaml`).
+3. **Triage (the agent's job).** For residual flags, identify the step that owns the flagged code. Fix it there and propagate forward; never "fix" one step's concern inside another step's PR. If the flag is a stack artifact (provided by a parent, fixed by a child), reply on the thread explaining that so a reviewer can resolve it.
+
+What no configuration can fix: cross-PR coordination of findings. The bot will never know that PR 4 resolves what it flagged in PR 3 — only triage absorbs that.
+
 ## Squash merges duplicate commits
 
 If the repository squash-merges, the merged PR's individual commits never land on the default branch — so every remaining branch in the stack still carries the old step's commits and will conflict on a naive rebase or merge. Drop the duplicated range instead of replaying it:

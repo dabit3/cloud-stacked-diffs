@@ -74,9 +74,10 @@ The skill defines how the stack is built; the MCP adds read/write access to the 
 - Changes to an earlier step are propagated forward through the chain, then re-verified
 - Mid-run merges are handled: bases retargeted, remaining branches rebased (squash-merge aware), checks re-run
 - Superseded PRs are closed with a one-line explanation, so the open stack only contains PRs worth a reviewer's attention
+- Review feedback is triaged to the step that owns it: fixes land on the owning branch and propagate forward, and stack-artifact bot comments get a reply explaining the chain instead of a misplaced change
 - The agent never merges PRs and never pushes to the default branch
 
-Known stacked-PR gotchas (merge-queue checks that can't pass until parents merge, review bots skipping drafts, squash-merge commit duplication) are documented with recovery commands in [`references/gotchas.md`](.agents/skills/cloud-stacked-diffs/references/gotchas.md).
+Known stacked-PR gotchas (merge-queue checks that can't pass until parents merge, review bots that skip drafts or lack stack awareness, squash-merge commit duplication) are documented with recovery commands in [`references/gotchas.md`](.agents/skills/cloud-stacked-diffs/references/gotchas.md). If you use Devin Review, [`references/devin-review.md`](.agents/skills/cloud-stacked-diffs/references/devin-review.md) has a copy-paste `REVIEW.md` snippet that teaches the bot your stack convention.
 
 ## Requirements
 
