@@ -7,8 +7,9 @@ Add the following to the `REVIEW.md` at the repository root, creating the file i
 ```markdown
 ## Stacked pull requests
 
-PRs on branches named `feature/NN-*` are stacked: each PR's base is the
-previous step's branch, and the stack merges bottom-up (step 01 first).
+PRs on branches under `stack/<name>/` (e.g. `stack/checkout-flow/01-scaffold`)
+are stacked: each PR's base is the previous step's branch, and the stack
+merges bottom-up (step 01 first).
 
 When reviewing these PRs:
 

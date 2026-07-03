@@ -14,6 +14,15 @@ Merge-queue and stack-mergeability checks (Graphite's mergeability check, GitHub
 - Do not try to "fix" them by rebasing onto the default branch — that destroys the stack.
 - Name them in the delivery summary so reviewers know which pending checks are merge-order artifacts.
 
+## CI that never triggers on stack-internal PRs
+
+Workflow triggers are commonly filtered to PRs targeting the default branch (GitHub Actions `on: pull_request: branches: [main]`; GitLab `rules` on the target branch). Every PR in the stack except step 1 targets another stack branch, so those workflows never run — the PR shows no checks at all, and a sweep that only looks for failures mistakes that for green.
+
+- Detect it per PR: `gh pr checks <n>` reports when no checks ran. Reading the workflow triggers once at stack start tells you up front whether the whole stack is affected.
+- Never report a PR with zero executed checks as verified. The evidence is then the locally run repository checks — name the commands and results in the PR body.
+- Do not widen the repository's CI triggers yourself to force runs; that is a repo-policy change. Suggest it in the delivery summary (e.g. adding `stack/**` to the workflow's `branches` filter) and let the owners decide.
+- List every affected PR in the delivery summary so reviewers know the missing CI is a trigger artifact, not an oversight.
+
 ## Review bots vs. drafts and stacks
 
 Automated review bots (Devin Review, Cursor BugBot, CodeRabbit, Copilot review, ...) typically:
@@ -39,8 +48,8 @@ If the repository squash-merges, the merged PR's individual commits never land o
 
 ```bash
 git fetch origin
-git rebase --onto origin/main feature/01-scaffold feature/02-design-tokens
-git push --force-with-lease origin feature/02-design-tokens
+git rebase --onto origin/main stack/checkout-flow/01-scaffold stack/checkout-flow/02-design-tokens
+git push --force-with-lease origin stack/checkout-flow/02-design-tokens
 ```
 
 Repeat up the chain (`--onto <new parent> <old parent> <branch>`), then re-run the repository's checks on every rebased branch.

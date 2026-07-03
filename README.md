@@ -42,9 +42,9 @@ The agent produces a branch chain with one draft PR per step:
 
 ```
 main
- └─ feature/01-scaffold           PR #1 (base: main)
-     └─ feature/02-design-tokens  PR #2 (base: feature/01-scaffold)
-         └─ feature/03-app-shell  PR #3 (base: feature/02-design-tokens)
+ └─ stack/webapp/01-scaffold           PR #1 (base: main)
+     └─ stack/webapp/02-design-tokens  PR #2 (base: stack/webapp/01-scaffold)
+         └─ stack/webapp/03-app-shell  PR #3 (base: stack/webapp/02-design-tokens)
 ```
 
 It finishes with a summary of the branch chain and all PR links, in merge order.
@@ -65,10 +65,11 @@ The skill defines how the stack is built; the MCP adds read/write access to the 
 
 ## What the skill enforces
 
-- One branch and one draft PR per step, named `feature/NN-slug`
+- One branch and one draft PR per step, named `stack/<stack-slug>/NN-step-slug` — the per-stack namespace keeps parallel stacks in one repository from colliding, and resuming a run verifies a pre-existing branch actually belongs to the stack before building on it
 - Step 1 branches from the default branch; every later step branches from the previous step's branch
 - Repository checks (lint, typecheck, tests) pass before each PR is opened, and are re-run on every branch a restack touches, because verification is head-commit-specific
 - PR wiring is verified after creation: the base actually points at the parent branch and the diff is scoped to the step
+- Check execution is verified, not assumed: a PR showing zero checks is never reported green — when CI triggers skip stack-internal PRs, the documented local runs stand in as evidence and the gap is called out
 - Every PR body is self-contained: stack position, parent branch, evidence, and merge order
 - The repository's PR template is followed when one exists
 - Changes to an earlier step are propagated forward through the chain, then re-verified
@@ -77,7 +78,7 @@ The skill defines how the stack is built; the MCP adds read/write access to the 
 - Review feedback is triaged to the step that owns it: fixes land on the owning branch and propagate forward, and stack-artifact bot comments get a reply explaining the chain instead of a misplaced change
 - The agent never merges PRs and never pushes to the default branch
 
-Known stacked-PR gotchas (merge-queue checks that can't pass until parents merge, review bots that skip drafts or lack stack awareness, squash-merge commit duplication) are documented with recovery commands in [`references/gotchas.md`](.agents/skills/cloud-stacked-diffs/references/gotchas.md). If you use Devin Review, [`references/devin-review.md`](.agents/skills/cloud-stacked-diffs/references/devin-review.md) has a copy-paste `REVIEW.md` snippet that teaches the bot your stack convention.
+Known stacked-PR gotchas (merge-queue checks that can't pass until parents merge, CI triggers that never fire on stack-internal PRs, review bots that skip drafts or lack stack awareness, squash-merge commit duplication) are documented with recovery commands in [`references/gotchas.md`](.agents/skills/cloud-stacked-diffs/references/gotchas.md). If you use Devin Review, [`references/devin-review.md`](.agents/skills/cloud-stacked-diffs/references/devin-review.md) has a copy-paste `REVIEW.md` snippet that teaches the bot your stack convention.
 
 ## Requirements
 
