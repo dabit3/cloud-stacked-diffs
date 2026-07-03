@@ -49,7 +49,7 @@ main
 
 It finishes with a summary of the branch chain and all PR links, in merge order.
 
-### With a Linear MCP integration
+### With a Linear MCP integration (optional)
 
 If the agent also has an issue tracker connected, for example the [Linear MCP server](https://linear.app/docs/mcp), the tracker can drive the stack instead of an inline list:
 
