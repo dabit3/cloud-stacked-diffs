@@ -10,18 +10,21 @@ Deliver a multi-step task as an ordered chain of branches and draft pull request
 
 ## Inputs
 
-The ordered list of steps comes from the user's request. If the request does not already define clear steps, propose a numbered breakdown (one reviewable unit of work per step) and confirm it with the user before starting.
+The ordered list of steps comes from the user's request. If the request does not already define clear steps, propose a numbered breakdown and confirm it with the user before starting. When running autonomously with no one to confirm with (a background/async agent), do not block: proceed with a best-effort breakdown, record it as the stack plan in the first PR's body, and refine it as the work reveals better boundaries.
+
+Splitting into steps: each step should be one coherent concern that can pass the repository's checks on its own and be reviewed without reading the other steps. Prefer boundaries that keep a step self-contained over hitting any particular size. If a step cannot go green in isolation — e.g. its tests only pass once a later step lands — that is a bad split: reorder or combine steps rather than opening a red PR. Truly independent pieces of work do not need a stack at all; parallel PRs branched off the default branch are simpler.
 
 ## Rules (apply to every step)
 
 - Before starting, create a todo list with one item per step. Use your built-in task tracking if you have it; otherwise maintain a markdown checklist.
 - Pick ONE stack slug for the whole run: a short kebab-case name for the overall task (e.g. `checkout-flow`). All of the stack's branches live under `stack/<stack-slug>/`. Before first use, check the remote (`git ls-remote --heads origin "stack/<stack-slug>/*"`): existing branches under that prefix mean you are resuming that same task — if they belong to a different task, pick another slug. The namespace is what lets parallel stacks coexist in one repository.
 - Name branches `stack/<stack-slug>/NN-step-slug`, where `NN` is the two-digit zero-padded step number and `step-slug` is a short kebab-case description of the step (e.g. `stack/checkout-flow/01-scaffold`, `stack/checkout-flow/02-design-tokens`).
-- Step 1 branches from the repository's default branch (`main` unless the repo uses something else).
+- Step 1 branches from the repository's default branch. Detect it rather than assuming `main` (e.g. `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, or `git symbolic-ref refs/remotes/origin/HEAD`). Command examples in this skill use `main` as a placeholder for whatever the default branch actually is.
 - Every subsequent step branches from the PREVIOUS step's branch, never from the default branch.
 - Every PR is created as a draft.
 - Keep each step's diff scoped to that step only.
 - Verification is head-commit-specific: a check that passed on an older commit means nothing after a push. Any change to a branch — fixes, propagation merges, rebases — requires re-running the repository's checks on it. Zero checks executing is not a pass either: confirm checks actually ran before reporting a PR green.
+- Keep a living stack manifest in PR #1's body: the full numbered plan plus each step's status and PR link, updated as steps land. It is the async source of truth so a reviewer landing on the bottom of the stack sees the whole plan and progress. The end-of-run overview comment (see Delivery) is its final snapshot.
 - Long runs drift: re-read this skill's rules before starting each step.
 
 ## Procedure (repeat for each step N)
@@ -29,7 +32,7 @@ The ordered list of steps comes from the user's request. If the request does not
 1. Pick a short, descriptive slug for the step.
 2. Create the branch from the correct base: the previous step's branch, or the default branch for step 1. If the branch already exists (e.g. you are resuming an interrupted run), verify it belongs to this stack before building on it — it lives under this stack's `stack/<stack-slug>/` prefix and its PR, if one exists, targets the expected parent — then check it out and continue where it left off. Never resume onto a branch that fails that check: it is another task's work, and the fix is a different stack slug, not a shared branch.
 3. Implement the work for the step on that branch.
-4. Run the repository's configured checks (lint, typecheck, and tests if present). If any fail, fix them on this branch before moving on.
+4. Run the repository's configured checks (lint, typecheck, and tests if present). Find them where the repo defines them — `package.json` scripts, a `Makefile`/`Justfile`, `pre-commit` config, `pyproject.toml`/`tox.ini`, or the CI workflow files (which also show what platform CI will run). If you genuinely cannot find any checks, do not silently treat that as green — say so in the PR body. If any fail, fix them on this branch before moving on.
 5. Commit and push the branch to the remote.
 6. Create a draft pull request:
    - head: this step's branch
@@ -47,7 +50,7 @@ The ordered list of steps comes from the user's request. If the request does not
 The branches are chained, so changing step K affects every step after it:
 
 1. Make the fix on step K's branch and push it.
-2. Propagate forward in order: for each following branch (K+1, then K+2, ...), merge its parent branch into it, resolve any conflicts, and push.
+2. Propagate forward in order: for each following branch (K+1, then K+2, ...), merge its parent branch into it, resolve any conflicts, and push. Resolve clerical conflicts (import ordering, adjacent edits, lockfiles) yourself; if a conflict is substantive or its intended resolution is ambiguous, stop and escalate rather than guessing.
 3. If the team prefers linear history, instead rebase each descendant onto its updated parent and push with `--force-with-lease` — but only ever force-push the stack's own `stack/<stack-slug>/*` branches.
 4. Re-verify everything you touched: re-run the repository's checks on every propagated branch. A merge or rebase can break a descendant even when there were no conflicts.
 5. If a step is dropped or reworked to the point its PR is obsolete, close that PR with a one-line comment ("superseded by #N"). The open stack must only contain PRs worth a reviewer's attention.
@@ -93,3 +96,4 @@ After ALL steps are done:
 - Do NOT merge any PR.
 - Do NOT push directly to the default branch.
 - Do NOT base a step's branch on anything other than the previous step's branch (or the default branch for step 1).
+- Do NOT delete a stack branch while a later step's PR still targets it as its base.

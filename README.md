@@ -66,11 +66,13 @@ The skill defines how the stack is built; the MCP adds read/write access to the 
 ## What the skill enforces
 
 - One branch and one draft PR per step, named `stack/<stack-slug>/NN-step-slug` — the per-stack namespace keeps parallel stacks in one repository from colliding, and resuming a run verifies a pre-existing branch actually belongs to the stack before building on it
-- Step 1 branches from the default branch; every later step branches from the previous step's branch
+- Steps are split so each is one coherent concern that passes checks on its own; a step that can't go green in isolation is a bad split to reorder or combine
+- Step 1 branches from the default branch (detected, not assumed to be `main`); every later step branches from the previous step's branch
 - Repository checks (lint, typecheck, tests) pass before each PR is opened, and are re-run on every branch a restack touches, because verification is head-commit-specific
 - PR wiring is verified after creation: the base actually points at the parent branch and the diff is scoped to the step
 - Check execution is verified, not assumed: a PR showing zero checks is never reported green — when CI triggers skip stack-internal PRs, the documented local runs stand in as evidence and the gap is called out
-- Every PR body is self-contained: stack position, parent branch, evidence, and merge order
+- Every PR body is self-contained: stack position, parent branch, evidence, and merge order, with a living stack manifest kept current in PR #1 so async reviewers see the whole plan and progress from the bottom of the stack
+- Runs autonomously when there's no one to confirm the breakdown with: proceeds with a best-effort plan recorded in PR #1 instead of blocking
 - The repository's PR template is followed when one exists
 - Changes to an earlier step are propagated forward through the chain, then re-verified
 - Mid-run merges are handled: bases retargeted, remaining branches rebased (squash-merge aware), checks re-run
