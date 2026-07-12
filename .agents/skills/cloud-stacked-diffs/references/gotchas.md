@@ -6,6 +6,22 @@ Field notes from running stacked-PR workflows with cloud agents. SKILL.md has th
 
 A green check "on the PR" is meaningless unless it ran against the branch's current head commit. Every push — including propagation merges and rebases — invalidates prior runs. After any change to a branch, re-run the repository's checks and re-check the PR's status before calling it verified. Citing a check that passed on an older commit is the single most common false done-claim in stacked workflows.
 
+## Finding what to run for local verification
+
+The "zero checks is not a pass" rule only bites if you actually know what the repo's checks are — a stack-internal PR often runs no platform CI (next section), so the local run is frequently the *only* evidence. Discover the checks before claiming green:
+
+- `package.json` `scripts` (`lint`, `typecheck`, `test`, `build`), a `Makefile`/`Justfile`, `pre-commit` hooks (`.pre-commit-config.yaml`), Python config (`pyproject.toml`, `tox.ini`, `noxfile.py`), and the CI workflow files themselves (`.github/workflows/*`, `.gitlab-ci.yml`) — the CI config doubles as the canonical list of what "green" means for this repo.
+- Run the same commands CI would, so the local evidence matches what a reviewer expects.
+- If the repo genuinely defines no checks, say exactly that in the PR body rather than implying verification happened. "No checks defined in the repo" is honest; silence reads as "checks passed."
+
+## Keep a living stack manifest
+
+Async reviewers pick up the stack whenever they get to it, and they usually land on the bottom PR first. If the only overview is posted at the end of the run, everything before delivery is opaque. Maintain the manifest as you go:
+
+- Put the full numbered plan in PR #1's body and update each step's status and PR link as branches land. PR #1 is the natural anchor because it is the first thing a bottom-up reviewer opens.
+- Editing the description in place (rather than posting a new comment per step) keeps a single authoritative view and avoids notification spam.
+- The end-of-run overview comment on every PR (Delivery step 2) is the final snapshot of the same information, not a substitute for keeping #1 current during the run.
+
 ## Checks that cannot pass until parents merge
 
 Merge-queue and stack-mergeability checks (Graphite's mergeability check, GitHub merge queues, base-branch protection checks) frequently stay pending or red on stacked PRs until every parent has merged. This is expected, not a failure:
